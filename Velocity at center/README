@@ -1,0 +1,3 @@
+The text files are on the format
+radius, N ,number of cells, hmax, ux, uy, omega
+Note that for r =3 and 30 some of the values have diverged. When this happens we ignore that row. 
