@@ -90,7 +90,7 @@ for r in [1, 2, 3, 4, 5, 7, 10, 20, 30, 40, 50]:
 
         bc_u = DirichletBC(W.sub(0), u_analytical, u_boundary)
 
-########### nematic orderparameter, Using this is more stable than calculating the force
+########### Nematic orderparameter, Using this is more stable than using the expressions obtained for the force
         Qp = Expression((('alpha*x[0]/sqrt(x[0]*x[0] + x[1]*x[1])', 'defect*alpha*x[1]/sqrt(x[0]*x[0] + x[1]*x[1])')
                          ,
                          ('defect*alpha*x[1]/sqrt(x[0]*x[0] + x[1]*x[1])', '-alpha*x[0]/sqrt(x[0]*x[0] + x[1]*x[1])')),
