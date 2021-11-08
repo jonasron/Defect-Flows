@@ -8,8 +8,12 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 defect = 1  # 1 for positive, -1 for negative
-alpha = -1
-zeta = 1
+
+##### Defining the constants
+Gamma = 0.1
+eta = 1
+alpha = -1/Gamma
+zeta = np.sqrt(eta/Gamma)
 
 
 def u_boundary(x, on_boundary):
@@ -27,7 +31,7 @@ if defect == 1:
 elif defect == -1:
     defect_type = 'negative'
 
-
+###### this one is convinient if we want to plot the nematic director
 def atan_2(y, x):
     return np.angle(x + 1j * y)
 
@@ -50,17 +54,17 @@ for r in [1, 2, 3, 4, 5, 7, 10, 20, 30, 40, 50]:
         print("r = ", r, " N = ", N)
         # making domain
         rectangle = Rectangle(Point(-r / 2, -r / 2),
-                              Point(r / 2, r / 2))  # nb: rectangular domain is unstable
+                              Point(r / 2, r / 2))  # nb: rectangular domain is very unstable
         circel = Circle(Point(0.0, 0.0), r)
         mesh = generate_mesh(circel, N)
-
+##### creating a file to utput the data, this is only done for some parameters
         velocity_stiring = 'Data_velocity/U_' + defect_type + str(r)+ '.xdmf'
         vorticity_string = 'Data_vorticity/omega_' + defect_type + str(r)+ '.xdmf'
 
         xdmffile_u = XDMFFile(velocity_stiring)
         xdmffile_omega = XDMFFile(vorticity_string)
 
-
+###### Defining our function spaces
         p_u = 2
         p_p = 1
         V = VectorElement("Lagrange", mesh.ufl_cell(), p_u)
@@ -73,6 +77,7 @@ for r in [1, 2, 3, 4, 5, 7, 10, 20, 30, 40, 50]:
         P1 = VectorFunctionSpace(mesh, "Lagrange", p_u)
         P2 = FunctionSpace(mesh, "Lagrange", p_p)
 
+##### Deffining test and trial functions
         u, p = TrialFunctions(W)
 
         v, q = TestFunctions(W)
@@ -80,18 +85,19 @@ for r in [1, 2, 3, 4, 5, 7, 10, 20, 30, 40, 50]:
         omega = TrialFunction(P2)
         psi = TestFunction(P2)
 
+##### Boundary conditions, note that with the non-slip bc the pressure is only determined up to a constant.
         u_analytical = Constant([0.0, 0.0])
 
         bc_u = DirichletBC(W.sub(0), u_analytical, u_boundary)
 
-########### nematic orderparameter, Using this is much more stable than calculating the force
+########### nematic orderparameter, Using this is more stable than calculating the force
         Qp = Expression((('alpha*x[0]/sqrt(x[0]*x[0] + x[1]*x[1])', 'defect*alpha*x[1]/sqrt(x[0]*x[0] + x[1]*x[1])')
                          ,
                          ('defect*alpha*x[1]/sqrt(x[0]*x[0] + x[1]*x[1])', '-alpha*x[0]/sqrt(x[0]*x[0] + x[1]*x[1])')),
                         alpha=alpha, defect=defect, degree=6)
 
         bc = [bc_u]
-
+##### Setting up the weak form of the equations
         a = zeta**2 * inner(grad(u), grad(v)) * dx + dot(u, v) * dx + div(u) * q * dx - div(v) * p * dx  #
         L = -inner(Qp, grad(v)) * dx
 
@@ -101,7 +107,7 @@ for r in [1, 2, 3, 4, 5, 7, 10, 20, 30, 40, 50]:
         solve(A, UP.vector(), b, 'mumps')
 
         U, P = UP.split()
-
+###### Calculating the vorticity
         a1 = omega * psi * dx
         L1 = U[1].dx(0) * psi * dx - U[0].dx(1) * psi * dx
         omega = Function(P2)
@@ -111,6 +117,7 @@ for r in [1, 2, 3, 4, 5, 7, 10, 20, 30, 40, 50]:
         u_num = U(point)
         omega_num = omega(point)
 
+##### Saving some data
         out_list[counter, 0] = r
         out_list[counter, 1] = N
         out_list[counter, 2] = mesh.num_cells()
@@ -120,6 +127,7 @@ for r in [1, 2, 3, 4, 5, 7, 10, 20, 30, 40, 50]:
         out_list[counter, 6] = omega_num  # obs: omega is multivalued at zero
         # print(mesh.hmin())
         counter += 1
+
         xdmffile_u.write(U)
         xdmffile_omega.write(omega)
 
